@@ -192,8 +192,8 @@
         .btn-save:hover { background-color: var(--primary-color); }
         .btn-reset { background-color: #e57373; color: white; }
         .btn-reset:hover { background-color: #d32f2f; }
-        .btn-download { background-color: #2e7d32; color: white; }
-        .btn-download:hover { background-color: #1b5e20; }
+        .btn-download { background-color: #4a3525; color: white; }
+        .btn-download:hover { background-color: #312318; }
 
         /* 右側預覽卡片樣式 */
         #capture-area {
@@ -263,13 +263,6 @@
             font-weight: bold;
             margin-right: 5px;
             border: 1px solid #dcd1be;
-        }
-
-        .watermark {
-            text-align: right;
-            font-size: 0.7rem;
-            color: #ccc;
-            margin-top: 20px;
         }
     </style>
 </head>
@@ -407,7 +400,7 @@
                 <div class="form-section-title">備註</div>
                 <div class="form-group">
                     <label>風味筆記 / 烘焙備註</label>
-                    <textarea id="notes" rows="3" placeholder="例如：下豆前 30 秒開大排風..." oninput="handleInput()"></textarea>
+                    <textarea id="notes" rows="3" placeholder="" oninput="handleInput()"></textarea>
                 </div>
             </form>
             <div class="btn-group">
@@ -420,7 +413,7 @@
             <div id="capture-area">
                 <div class="preview-header">
                     <h3>ROASTING LOG</h3>
-                    <p>咖啡烘焙手記</p>
+                    <p>咖啡烘焙紀錄</p>
                 </div>
                 <div class="preview-grid">
                     <div class="preview-item">
@@ -482,11 +475,10 @@
                         <div class="preview-value" id="p-notes" style="white-space: pre-wrap;">-</div>
                     </div>
                 </div>
-                <div class="watermark">Roasting Assistant System v6</div>
             </div>
 
             <div class="btn-group">
-                <button class="main-btn btn-download" onclick="downloadJPG()">生成並下載 JPG 圖片</button>
+                <button class="main-btn btn-download" onclick="downloadJPG()">下載圖片</button>
             </div>
         </div>
     </div>
@@ -580,7 +572,6 @@
         let fcTotalSec = fcMin * 60 + fcSec;
         let dropTotalSec = dropMin * 60 + dropSec;
 
-        // 必須同時有填寫一爆與下豆時間，且下豆時間需大於一爆時間
         if ((log.fcMin !== '' || log.fcSec !== '') && (log.dropMin !== '' || log.dropSec !== '') && dropTotalSec > fcTotalSec && dropTotalSec > 0) {
             let dtr = ((dropTotalSec - fcTotalSec) / dropTotalSec) * 100;
             return dtr.toFixed(2) + ' %';
@@ -653,7 +644,6 @@
             document.getElementById('p-setting').innerText = '-';
         }
 
-        // 依照新順序渲染時間軸
         document.getElementById('p-yl').innerText = formatTimelineString(log.ylMin, log.ylSec, log.ylTemp);
         document.getElementById('p-fc').innerText = formatTimelineString(log.fcMin, log.fcSec, log.fcTemp);
         document.getElementById('p-fce').innerText = formatTimelineString(log.fceMin, log.fceSec, log.fceTemp);
@@ -662,7 +652,6 @@
         document.getElementById('p-af').innerText = formatTimelineString(log.afMin, log.afSec, log.afTemp);
         document.getElementById('p-dropTime').innerText = formatTimelineString(log.dropMin, log.dropSec, log.dropTemp);
 
-        // 計算並更新發展率 (DTR)
         let dtrText = calculateDTR(log);
         document.getElementById('dtrVal').value = dtrText !== '-' ? dtrText : '';
         document.getElementById('p-dtr').innerText = dtrText;
