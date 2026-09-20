@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>咖啡烘焙紀錄助手 V6</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #4a3525;
+            --secondary-color: #8c6239;
+            --bg-color: #f5f2eb;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 950px;
+        }
+
+        h1 {
+            color: var(--primary-color);
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        /* 歷史紀錄標籤切換 */
+        .history-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .tab-btn {
+            background-color: #e0dacb;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            color: var(--primary-color);
+            transition: all 0.3s;
+        }
+
+        .tab-btn.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        /* 表單與卡片樣式 */
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+
+        @media (min-width: 768px) {
+            .main-layout {
+                grid-template-columns: 1.2fr 0.8fr;
+            }
+        }
+
+        .card {
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            box-sizing: border-box;
+        }
+
+        h2 {
+            margin-top: 0;
+            color: var(--secondary-color);
+            border-bottom: 2px solid var(--bg-color);
+            padding-bottom: 10px;
+            font-size: 1.2rem;
+        }
+
+        .form-section-title {
+            font-size: 0.95rem;
+            color: var(--primary-color);
+            background: #fdfbf7;
+            padding: 6px 10px;
+            border-left: 4px solid var(--secondary-color);
+            margin: 20px 0 10px 0;
+            font-weight: bold;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-size: 0.85rem;
+            color: #555;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 0.9rem;
+        }
+
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: var(--secondary-color);
+        }
+
+        /* 時間與溫度空格組合樣式 */
+        .time-input-group {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .time-input-group input.time-num {
+            width: 60px;
+            text-align: center;
+        }
+        .time-input-group span {
+            font-size: 0.85rem;
+            color: #555;
+        }
+
+        /* 按鈕群組選擇器 */
+        .btn-selector-wrapper {
+            margin-bottom: 8px;
+        }
+        .btn-selector-title {
+            font-size: 0.8rem;
+            color: #777;
+            margin-bottom: 4px;
+        }
+        .btn-selector {
+            display: flex;
+            gap: 6px;
+        }
+        .select-btn {
+            flex: 1;
+            background-color: #f0f0f0;
+            border: 1px solid #ddd;
+            padding: 8px;
+            font-size: 0.85rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #555;
+        }
+        .select-btn.active {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+            font-weight: bold;
+        }
+
+        /* 功能按鈕 */
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        button.main-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-save { background-color: var(--secondary-color); color: white; }
+        .btn-save:hover { background-color: var(--primary-color); }
+        .btn-reset { background-color: #e57373; color: white; }
+        .btn-reset:hover { background-color: #d32f2f; }
+        .btn-download { background-color: #2e7d32; color: white; }
+        .btn-download:hover { background-color: #1b5e20; }
+
+        /* 右側預覽卡片樣式 */
+        #capture-area {
+            background: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            color: #333;
+            font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+        }
+
+        .preview-header {
+            text-align: center;
+            border-bottom: 3px double var(--secondary-color);
+            padding-bottom: 12px;
+            margin-bottom: 18px;
+        }
+
+        .preview-header h3 {
+            margin: 0;
+            color: var(--primary-color);
+            font-size: 1.5rem;
+            letter-spacing: 2px;
+        }
+
+        .preview-header p {
+            margin: 4px 0 0 0;
+            font-size: 0.8rem;
+            color: #777;
+        }
+
+        .preview-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .preview-item {
+            border-bottom: 1px dashed #eee;
+            padding-bottom: 6px;
+        }
+
+        .preview-item.full-width {
+            grid-column: span 2;
+        }
+
+        .preview-label {
+            font-size: 0.8rem;
+            color: #888;
+            margin-bottom: 2px;
+        }
+
+        .preview-value {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #222;
+            word-break: break-all;
+        }
+
+        .roast-tag {
+            display: inline-block;
+            background-color: #f0ebe1;
+            color: var(--primary-color);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            margin-right: 5px;
+            border: 1px solid #dcd1be;
+        }
+
+        .watermark {
+            text-align: right;
+            font-size: 0.7rem;
+            color: #ccc;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>☕ Coffee Roasting Log</h1>
+
+    <div class="history-tabs">
+        <button class="tab-btn active" onclick="switchLog(0)">紀錄 1</button>
+        <button class="tab-btn" onclick="switchLog(1)">紀錄 2</button>
+        <button class="tab-btn" onclick="switchLog(2)">紀錄 3</button>
+    </div>
+
+    <div class="main-layout">
+        <div class="card">
+            <h2>烘焙參數輸入</h2>
+            <form id="roastingForm" onsubmit="return false;">
+                
+                <div class="form-section-title">基本資訊</div>
+                <div class="form-group">
+                    <label>烘焙日期</label>
+                    <input type="date" id="date">
+                </div>
+                <div class="form-group">
+                    <label>豆子名稱 / 產區資訊</label>
+                    <input type="text" id="beanName" placeholder="例如：肯亞 涅里 益卡提處理廠" oninput="handleInput()">
+                </div>
+                <div class="form-group">
+                    <label>生豆重量 (g) / 熟豆重量 (g)</label>
+                    <div style="display:flex; gap:10px;">
+                        <input type="number" id="weightIn" placeholder="生豆(g)" oninput="handleInput()">
+                        <input type="number" id="weightOut" placeholder="熟豆(g)" oninput="handleInput()">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>烘焙設定 (按鈕組合選擇)</label>
+                    <div class="btn-selector-wrapper">
+                        <div class="btn-selector-title">風味傾向：</div>
+                        <div class="btn-selector" id="flavorGroup">
+                            <button class="select-btn" onclick="setSelectValue('flavor', '酸')">酸</button>
+                            <button class="select-btn" onclick="setSelectValue('flavor', '平衡')">平衡</button>
+                            <button class="select-btn" onclick="setSelectValue('flavor', '苦')">苦</button>
+                        </div>
+                    </div>
+                    <div class="btn-selector-wrapper">
+                        <div class="btn-selector-title">預期烘焙度：</div>
+                        <div class="btn-selector" id="roastGroup">
+                            <button class="select-btn" onclick="setSelectValue('roast', '淺')">淺</button>
+                            <button class="select-btn" onclick="setSelectValue('roast', '淺中')">淺中</button>
+                            <button class="select-btn" onclick="setSelectValue('roast', '中深')">中深</button>
+                            <button class="select-btn" onclick="setSelectValue('roast', '深')">深</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section-title">烘焙時間軸 (分 / 秒 / 溫度)</div>
+                
+                <div class="form-group">
+                    <label>轉黃點 (Yellowing Point)</label>
+                    <div class="time-input-group">
+                        <input type="number" id="ylMin" class="time-num" placeholder="分" oninput="handleInput()"> <span>分</span>
+                        <input type="number" id="ylSec" class="time-num" placeholder="秒" oninput="handleInput()"> <span>秒</span>
+                        <span>/</span>
+                        <input type="text" id="ylTemp" placeholder="溫度 (°C)" style="flex:1;" oninput="handleInput()">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>一爆開始 (1C Start)</label>
+                    <div class="time-input-group">
+                        <input type="number" id="fcMin" class="time-num" placeholder="分" oninput="handleInput()"> <span>分</span>
+                        <input type="number" id="fcSec" class="time-num" placeholder="秒" oninput="handleInput()"> <span>秒</span>
+                        <span>/</span>
+                        <input type="text" id="fcTemp" placeholder="溫度 (°C)" style="flex:1;" oninput="handleInput()">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>一爆結束 (1C End)</label>
+                    <div class="time-input-group">
+                        <input type="number" id="fceMin" class="time-num" placeholder="分" oninput="handleInput()"> <span>分</span>
+                        <input type="number" id="fceSec" class="time-num" placeholder="秒" oninput="handleInput()"> <span>秒</span>
+                        <span>/</span>
+                        <input type="text" id="fceTemp" placeholder="溫度 (°C)" style="flex:1;" oninput="handleInput()">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>二爆開始 (2C Start)</label>
+                    <div class="time-input-group">
+                        <input type="number" id="scMin" class="time-num" placeholder="分" oninput="handleInput()"> <span>分</span>
+                        <input type="number" id="scSec" class="time-num" placeholder="秒" oninput="handleInput()"> <span>秒</span>
+                        <span>/</span>
+                        <input type="text" id="scTemp" placeholder="溫度 (°C)" style="flex:1;" oninput="handleInput()">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>二爆結束 (2C End)</label>
+                    <div class="time-input-group">
+                        <input type="number" id="sceMin" class="time-num" placeholder="分" oninput="handleInput()"> <span>分</span>
+                        <input type="number" id="sceSec" class="time-num" placeholder="秒" oninput="handleInput()"> <span>秒</span>
+                        <span>/</span>
+                        <input type="text" id="sceTemp" placeholder="溫度 (°C)" style="flex:1;" oninput="handleInput()">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>抽風開始時間 (Airflow Start)</label>
+                    <div class="time-input-group">
+                        <input type="number" id="afMin" class="time-num" placeholder="分" oninput="handleInput()"> <span>分</span>
+                        <input type="number" id="afSec" class="time-num" placeholder="秒" oninput="handleInput()"> <span>秒</span>
+                        <span>/</span>
+                        <input type="text" id="afTemp" placeholder="溫度 / 風門段位" style="flex:1;" oninput="handleInput()">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>下豆時間 (Drop Time)</label>
+                    <div class="time-input-group">
+                        <input type="number" id="dropMin" class="time-num" placeholder="分" oninput="handleInput()"> <span>分</span>
+                        <input type="number" id="dropSec" class="time-num" placeholder="秒" oninput="handleInput()"> <span>秒</span>
+                        <span>/</span>
+                        <input type="text" id="dropTemp" placeholder="溫度 (°C)" style="flex:1;" oninput="handleInput()">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>發展率 (DTR)</label>
+                    <input type="text" id="dtrVal" placeholder="填寫一爆開始與下豆時間後自動計算" readonly style="background-color: #f9f9f9; color: var(--primary-color); font-weight: bold;">
+                </div>
+
+                <div class="form-section-title">備註</div>
+                <div class="form-group">
+                    <label>風味筆記 / 烘焙備註</label>
+                    <textarea id="notes" rows="3" placeholder="例如：下豆前 30 秒開大排風..." oninput="handleInput()"></textarea>
+                </div>
+            </form>
+            <div class="btn-group">
+                <button class="main-btn btn-save" onclick="saveCurrentLog()">儲存此紀錄</button>
+                <button class="main-btn btn-reset" onclick="resetCurrentLog()">重置此紀錄</button>
+            </div>
+        </div>
+
+        <div>
+            <div id="capture-area">
+                <div class="preview-header">
+                    <h3>ROASTING LOG</h3>
+                    <p>咖啡烘焙手記</p>
+                </div>
+                <div class="preview-grid">
+                    <div class="preview-item">
+                        <div class="preview-label">烘焙日期 DATE</div>
+                        <div class="preview-value" id="p-date">-</div>
+                    </div>
+                    <div class="preview-item">
+                        <div class="preview-label">失水率 LOSS RATIO</div>
+                        <div class="preview-value" id="p-loss">-</div>
+                    </div>
+                    <div class="preview-item full-width">
+                        <div class="preview-label">咖啡豆資訊 BEAN INFO</div>
+                        <div class="preview-value" id="p-beanName">-</div>
+                    </div>
+                    <div class="preview-item">
+                        <div class="preview-label">進豆 / 出豆重量 WEIGHT</div>
+                        <div class="preview-value" id="p-weight">-</div>
+                    </div>
+                    <div class="preview-item">
+                        <div class="preview-label">烘焙設定 SETTING</div>
+                        <div class="preview-value" id="p-setting">-</div>
+                    </div>
+                    
+                    <div class="preview-item">
+                        <div class="preview-label">轉黃點 YELLOWING</div>
+                        <div class="preview-value" id="p-yl">-</div>
+                    </div>
+                    <div class="preview-item">
+                        <div class="preview-label">一爆開始 1C START</div>
+                        <div class="preview-value" id="p-fc">-</div>
+                    </div>
+                    <div class="preview-item">
+                        <div class="preview-label">一爆結束 1C END</div>
+                        <div class="preview-value" id="p-fce">-</div>
+                    </div>
+                    <div class="preview-item">
+                        <div class="preview-label">二爆開始 2C START</div>
+                        <div class="preview-value" id="p-sc">-</div>
+                    </div>
+                    <div class="preview-item">
+                        <div class="preview-label">二爆結束 2C END</div>
+                        <div class="preview-value" id="p-sce">-</div>
+                    </div>
+                    <div class="preview-item">
+                        <div class="preview-label">抽風開始 AIRFLOW</div>
+                        <div class="preview-value" id="p-af">-</div>
+                    </div>
+                    <div class="preview-item">
+                        <div class="preview-label" style="color: var(--secondary-color); font-weight: bold;">下豆時間 DROP TIME</div>
+                        <div class="preview-value" id="p-dropTime" style="font-weight: bold; color: var(--primary-color); font-size: 1.05rem;">-</div>
+                    </div>
+                    <div class="preview-item full-width" style="border-bottom: 2px solid var(--secondary-color); padding-bottom: 4px;">
+                        <div class="preview-label" style="color: var(--secondary-color); font-weight: bold;">發展率 DTR</div>
+                        <div class="preview-value" id="p-dtr" style="font-weight: bold; color: var(--primary-color); font-size: 1.05rem;">-</div>
+                    </div>
+                    
+                    <div class="preview-item full-width" style="margin-top: 5px;">
+                        <div class="preview-label">烘焙備註 NOTES</div>
+                        <div class="preview-value" id="p-notes" style="white-space: pre-wrap;">-</div>
+                    </div>
+                </div>
+                <div class="watermark">Roasting Assistant System v6</div>
+            </div>
+
+            <div class="btn-group">
+                <button class="main-btn btn-download" onclick="downloadJPG()">生成並下載 JPG 圖片</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentIdx = 0;
+    let logs = [{}, {}, {}];
+
+    const emptyLog = {
+        date: '', beanName: '', weightIn: '', weightOut: '',
+        flavor: '', roast: '', 
+        ylMin: '', ylSec: '', ylTemp: '',
+        fcMin: '', fcSec: '', fcTemp: '',
+        fceMin: '', fceSec: '', fceTemp: '',
+        scMin: '', scSec: '', scTemp: '',
+        sceMin: '', sceSec: '', sceTemp: '',
+        afMin: '', afSec: '', afTemp: '',
+        dropMin: '', dropSec: '', dropTemp: '', notes: ''
+    };
+
+    window.onload = function() {
+        const savedLogs = localStorage.getItem('coffee_roasting_logs_v6');
+        if (savedLogs) {
+            logs = JSON.parse(savedLogs);
+        } else {
+            logs = [JSON.parse(JSON.stringify(emptyLog)), JSON.parse(JSON.stringify(emptyLog)), JSON.parse(JSON.stringify(emptyLog))];
+            logs[0].date = new Date().toISOString().split('T')[0];
+        }
+        loadLogToForm(0);
+    };
+
+    function switchLog(idx) {
+        captureFormValues();
+        currentIdx = idx;
+        
+        const tabs = document.querySelectorAll('.tab-btn');
+        tabs.forEach((tab, i) => {
+            tab.classList.toggle('active', i === idx);
+        });
+
+        loadLogToForm(idx);
+    }
+
+    function setSelectValue(type, value) {
+        if (type === 'flavor') {
+            logs[currentIdx].flavor = logs[currentIdx].flavor === value ? '' : value;
+        } else if (type === 'roast') {
+            logs[currentIdx].roast = logs[currentIdx].roast === value ? '' : value;
+        }
+        updateButtonUI();
+        updatePreview(logs[currentIdx]);
+    }
+
+    function updateButtonUI() {
+        const currentLog = logs[currentIdx];
+        
+        const flavorBtns = document.querySelectorAll('#flavorGroup .select-btn');
+        flavorBtns.forEach(btn => {
+            btn.classList.toggle('active', btn.innerText === currentLog.flavor);
+        });
+
+        const roastBtns = document.querySelectorAll('#roastGroup .select-btn');
+        roastBtns.forEach(btn => {
+            btn.classList.toggle('active', btn.innerText === currentLog.roast);
+        });
+    }
+
+    function captureFormValues() {
+        logs[currentIdx].date = document.getElementById('date').value;
+        logs[currentIdx].beanName = document.getElementById('beanName').value;
+        logs[currentIdx].weightIn = document.getElementById('weightIn').value;
+        logs[currentIdx].weightOut = document.getElementById('weightOut').value;
+        
+        const fields = ['yl', 'fc', 'fce', 'sc', 'sce', 'af', 'drop'];
+        fields.forEach(f => {
+            logs[currentIdx][f+'Min'] = document.getElementById(f+'Min').value;
+            logs[currentIdx][f+'Sec'] = document.getElementById(f+'Sec').value;
+            logs[currentIdx][f+'Temp'] = document.getElementById(f+'Temp').value;
+        });
+
+        logs[currentIdx].notes = document.getElementById('notes').value;
+    }
+
+    function calculateDTR(log) {
+        let fcMin = parseFloat(log.fcMin) || 0;
+        let fcSec = parseFloat(log.fcSec) || 0;
+        let dropMin = parseFloat(log.dropMin) || 0;
+        let dropSec = parseFloat(log.dropSec) || 0;
+
+        let fcTotalSec = fcMin * 60 + fcSec;
+        let dropTotalSec = dropMin * 60 + dropSec;
+
+        // 必須同時有填寫一爆與下豆時間，且下豆時間需大於一爆時間
+        if ((log.fcMin !== '' || log.fcSec !== '') && (log.dropMin !== '' || log.dropSec !== '') && dropTotalSec > fcTotalSec && dropTotalSec > 0) {
+            let dtr = ((dropTotalSec - fcTotalSec) / dropTotalSec) * 100;
+            return dtr.toFixed(2) + ' %';
+        }
+        return '-';
+    }
+
+    function handleInput() {
+        captureFormValues();
+        updatePreview(logs[currentIdx]);
+    }
+
+    function loadLogToForm(idx) {
+        const log = logs[idx] || JSON.parse(JSON.stringify(emptyLog));
+        
+        document.getElementById('date').value = log.date || '';
+        document.getElementById('beanName').value = log.beanName || '';
+        document.getElementById('weightIn').value = log.weightIn || '';
+        document.getElementById('weightOut').value = log.weightOut || '';
+        
+        const fields = ['yl', 'fc', 'fce', 'sc', 'sce', 'af', 'drop'];
+        fields.forEach(f => {
+            document.getElementById(f+'Min').value = log[f+'Min'] || '';
+            document.getElementById(f+'Sec').value = log[f+'Sec'] || '';
+            document.getElementById(f+'Temp').value = log[f+'Temp'] || '';
+        });
+
+        document.getElementById('notes').value = log.notes || '';
+
+        updateButtonUI();
+        updatePreview(log);
+    }
+
+    function padZero(num) {
+        if (!num && num !== 0 && num !== '') return '';
+        if (num === '') return '';
+        return num.toString().padStart(2, '0');
+    }
+
+    function formatTimelineString(min, sec, temp) {
+        if (min || sec) {
+            let timeString = `${padZero(min)}'${padZero(sec)}"`;
+            let tempString = temp ? ` / ${temp}` : '';
+            return timeString + tempString;
+        } else {
+            return temp ? ` - / ${temp}` : '-';
+        }
+    }
+
+    function updatePreview(log) {
+        document.getElementById('p-date').innerText = log.date || '未填寫';
+        document.getElementById('p-beanName').innerText = log.beanName || '未填寫';
+        
+        let wIn = parseFloat(log.weightIn);
+        let wOut = parseFloat(log.weightOut);
+        if (wIn && wOut) {
+            document.getElementById('p-weight').innerText = `${wIn}g → ${wOut}g`;
+            let lossRatio = ((wIn - wOut) / wIn * 100).toFixed(2);
+            document.getElementById('p-loss').innerText = `${lossRatio} %`;
+        } else {
+            document.getElementById('p-weight').innerText = (wIn ? `${wIn}g` : '-') + ' / ' + (wOut ? `${wOut}g` : '-');
+            document.getElementById('p-loss').innerText = '-';
+        }
+
+        if (log.flavor || log.roast) {
+            let flavorText = log.flavor ? `<span class="roast-tag">${log.flavor}向</span>` : '';
+            let roastText = log.roast ? `<span class="roast-tag">${log.roast}焙</span>` : '';
+            document.getElementById('p-setting').innerHTML = flavorText + roastText;
+        } else {
+            document.getElementById('p-setting').innerText = '-';
+        }
+
+        // 依照新順序渲染時間軸
+        document.getElementById('p-yl').innerText = formatTimelineString(log.ylMin, log.ylSec, log.ylTemp);
+        document.getElementById('p-fc').innerText = formatTimelineString(log.fcMin, log.fcSec, log.fcTemp);
+        document.getElementById('p-fce').innerText = formatTimelineString(log.fceMin, log.fceSec, log.fceTemp);
+        document.getElementById('p-sc').innerText = formatTimelineString(log.scMin, log.scSec, log.scTemp);
+        document.getElementById('p-sce').innerText = formatTimelineString(log.sceMin, log.sceSec, log.sceTemp);
+        document.getElementById('p-af').innerText = formatTimelineString(log.afMin, log.afSec, log.afTemp);
+        document.getElementById('p-dropTime').innerText = formatTimelineString(log.dropMin, log.dropSec, log.dropTemp);
+
+        // 計算並更新發展率 (DTR)
+        let dtrText = calculateDTR(log);
+        document.getElementById('dtrVal').value = dtrText !== '-' ? dtrText : '';
+        document.getElementById('p-dtr').innerText = dtrText;
+
+        document.getElementById('p-notes').innerText = log.notes || '-';
+    }
+
+    function saveCurrentLog() {
+        captureFormValues();
+        localStorage.setItem('coffee_roasting_logs_v6', JSON.stringify(logs));
+        alert(`紀錄 ${currentIdx + 1} 已成功儲存！`);
+    }
+
+    function resetCurrentLog() {
+        if (confirm(`確定要清空「紀錄 ${currentIdx + 1}」的所有內容嗎？`)) {
+            logs[currentIdx] = JSON.parse(JSON.stringify(emptyLog));
+            if (currentIdx === 0) {
+                logs[0].date = new Date().toISOString().split('T')[0];
+            }
+            loadLogToForm(currentIdx);
+        }
+    }
+
+    function downloadJPG() {
+        captureFormValues();
+        updatePreview(logs[currentIdx]);
+
+        const element = document.getElementById('capture-area');
+        html2canvas(element, {
+            scale: 2,
+            backgroundColor: "#ffffff",
+            useCORS: true
+        }).then(canvas => {
+            const imgData = canvas.toDataURL('image/jpeg', 0.9);
+            const filename = `Roasting_Log_${document.getElementById('date').value || 'date'}.jpg`;
+            const link = document.createElement('a');
+            link.download = filename;
+            link.href = imgData;
+            link.click();
+        }).catch(err => {
+            console.error(err);
+            alert('圖片生成失敗。');
+        });
+    }
+</script>
+
+</body>
+</html>
