@@ -675,26 +675,59 @@
         }
     }
 
-    function downloadJPG() {
+    async function downloadJPG() {
         captureFormValues();
         updatePreview(logs[currentIdx]);
 
         const element = document.getElementById('capture-area');
-        html2canvas(element, {
-            scale: 2,
-            backgroundColor: "#ffffff",
-            useCORS: true
-        }).then(canvas => {
-            const imgData = canvas.toDataURL('image/jpeg', 0.9);
+        try {
+            const canvas = await html2canvas(element, {
+                scale: 2,
+                backgroundColor: "#ffffff",
+                useCORS: true
+            });
+
             const filename = `Roasting_Log_${document.getElementById('date').value || 'date'}.jpg`;
-            const link = document.createElement('a');
-            link.download = filename;
-            link.href = imgData;
-            link.click();
-        }).catch(err => {
+
+            canvas.toBlob(async (blob) => {
+                if (!blob) {
+                    alert('圖片生成失敗。');
+                    return;
+                }
+
+                const file = new File([blob], filename, { type: 'image/jpeg' });
+
+                // 優先使用裝置原生的 Web Share 功能（適合手機，可直接選擇「儲存影像」到相簿）
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    try {
+                        await navigator.share({
+                            files: [file],
+                            title: '咖啡烘焙紀錄',
+                            text: '咖啡烘焙紀錄圖檔'
+                        });
+                        return;
+                    } catch (shareErr) {
+                        // 使用者取消分享時不跳錯誤警告
+                        if (shareErr.name !== 'AbortError') {
+                            console.error('分享失敗，切換為直接下載', shareErr);
+                        } else {
+                            return;
+                        }
+                    }
+                }
+
+                // 若瀏覽器不支援 Web Share API，則降級使用標準下載連結
+                const imgData = canvas.toDataURL('image/jpeg', 0.9);
+                const link = document.createElement('a');
+                link.download = filename;
+                link.href = imgData;
+                link.click();
+            }, 'image/jpeg', 0.9);
+
+        } catch (err) {
             console.error(err);
             alert('圖片生成失敗。');
-        });
+        }
     }
 </script>
 
